@@ -1,0 +1,128 @@
+---
+title: "Introduction to decomposition"
+author: | 
+  | Tim Riffe
+  | MPIDR
+  | Laboratory of Population Health
+date: "21 Oct 2020"
+output: beamer_presentation
+header-includes:
+- \usepackage{graphicx}
+- \usepackage{xcolor}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+## Objectives of the module
+\Large
+
+>- Define decomposition
+>- Motivate
+>- Introduce variants 
+>- Practice
+>- Resources 
+>- Reminder open Google Doc
+
+## Decomposition
+
+$$\textcolor{violet}{\mathbb{Z}} = \textcolor{red}{f}(\textcolor{blue}{\theta})$$
+
+\pause
+Example
+$$\textcolor{red}{f}() = \int _0^\omega e^{-\int _o^x \mu(t) \mathrm{d}t} \mathrm{d}x$$
+
+\pause
+$$\textcolor{blue}{\theta} = [\mu]$$
+
+\pause
+$$ \textcolor{violet}{\mathbb{Z}} = e(0) $$
+
+## Decomposition
+
+Say we have a difference between two outcomes:
+
+$$\zeta = \mathbb{Z '} - \mathbb{Z} = f(\theta ') - f(\theta)$$
+\pause
+
+It's due to differences in input parameters, $\theta$
+
+\pause
+
+Property
+$$ \zeta = \sum \kappa_i$$
+
+\pause
+$\kappa_i$ is the $i^{th}$ ``contribution'' to $\zeta$, attributable to differences between $\theta_i$ and $\theta '_i$.
+
+$\kappa$ is on the scale of $\mathbb{Z}$
+
+## Motivation
+
+\begin{exampleblock}{}
+  {\large ``I believe [decomposition] is the key idea of all the methods founded in the core of demography. Decomposition theory is based on the simple principle of separating demographic measures into components that contribute to an understanding of the phenomena under study''}
+  \vskip5mm
+  \hspace*\fill{\small--- Vladimir Canudas Romo (2003)}
+\end{exampleblock}
+
+## 
+![](Dudel2020.png)
+
+## 
+![](Seaman2019.jpg)
+
+## 
+```{r fig.width=3,echo=FALSE}
+library(png)
+library(grid)
+img <- readPNG("Aburto2018.png")
+ grid.raster(img)
+```
+
+## 
+```{r fig.width=3,echo=FALSE}
+library(png)
+library(grid)
+img <- readPNG("Remund2018.png")
+ grid.raster(img)
+```
+
+## More examples
+
+>- How much of a life expecancy gap is due to differences in young vs old mortality? 
+>- Which ages and causes account for differences in lifespan variation?
+>- How much of overall variation is due to variation within subgroups versus variation between subgroups?
+>- Which ages and parities account for differences in TFR?
+>- How much of a crude rate is due to differences is rates vs population structure?
+>- How much of an increase in disabled life expectancy is due to short vs long bouts of disability?
+
+## Motivation
+
+>- Understanding
+>- Targetting interventions
+
+## Summary
+
+>- if you can calculate it you can decompose it
+>- enrich measurement, monitoring, science, even activism
+
+## Bibliography
+\tiny
+
+Aburto, J. M., & Beltrán-Sánchez, H. (2019). Upsurge of homicides and its impact on life expectancy and life span inequality in Mexico, 2005–2015. American journal of public health, 109(3), 483-489.
+
+Dudel, C., Riffe, T., Acosta, E., van Raalte, A. A., & Myrskyla, M. (2020). Monitoring trends and differences in COVID-19 case fatality rates using decomposition methods: Contributions of age structure and age-specific fatality. medRxiv.
+
+Remund, A., Camarda, C. G., & Riffe, T. (2018). A cause-of-death decomposition of young adult excess mortality. Demography, 55(3), 957-978.
+
+Seaman, R., et al. "The increasing lifespan variation gradient by area-level deprivation: A decomposition analysis of Scotland 1981–2011." Social Science & Medicine 230 (2019): 147-157.
+
+
+
+
+
+
+
+
+

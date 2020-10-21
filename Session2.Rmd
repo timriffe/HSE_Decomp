@@ -1,0 +1,135 @@
+---
+title: Variants of decomposition
+author: | 
+  | Tim Riffe
+  | MPIDR
+  | Laboratory of Population Health
+date: "21 Oct 2020"
+output: beamer_presentation
+header-includes:
+- \usepackage{graphicx}
+- \usepackage{xcolor}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Two classes
+
+- bespoke decompositions
+- generalized decomposition
+
+## Bespoke decompositions, examples
+
+>- Partition difference between crude rates in two subgroups (Kitagawa 1955)
+>- Partition difference between crude rates in **N** subgroups (Das Gupta 1978, ...)
+>- Partition differences in life expanctancy (Arriaga 1984)
+>- CTFR via parity progression (Zeman et al 2018)
+>- Intrinsic vs extrinsic mortality (Li et al 2013)
+>- Survival partitioning (Ebeling et al 2018)
+>- Location-scale (Basellini et al 2016)
+>- Name some more
+
+## Bespoke decompositions, examples
+
+- \textcolor{red}{Partition difference between crude rates in two subgroups} (Kitagawa 1955)
+- Partition difference between crude rates in **N** subgroups (Das Gupta 1978, ...)
+- Partition differences in life expanctancy (Arriaga 1984)
+- CTFR via parity progression (Zeman et al 2018)
+- Intrinsic vs extrinsic mortality (Li et al 2013)
+- Survival partitioning (Ebeling et al 2018)
+- Name some more
+
+## Kitagawa details
+
+\begin{exampleblock}{}
+  {\large Partition the difference in a \textbf{crude} rate into additive \textbf{rate} and \textbf{structure} components.}
+\end{exampleblock}
+\pause
+The total difference is the difference in rates times the mean structure (rate component) plus the difference in structure times the mean rates (structure component).
+
+
+
+## Kitagawa details
+
+Formally, for indices of the form:
+$$
+\mathbb{Z} = \frac{\sum r_xP_x}{\sum P_x}
+$$
+(That is to say, weighted means)
+\pause
+$$ \zeta = \mathbf{r} + \mathbf{s}$$
+\pause
+where: 
+
+- $\mathbf{r}$ is how much of the difference is due to \textbf{rates}
+- $\mathbf{s}$ is how much of the difference is due to \textbf{structure} 
+ 
+\pause
+$$
+r = (r^2 - r^1)  \frac{s^1 + s^2}{2}
+$$
+\pause
+$$
+s = (s^2 - s^1)  \frac{r^1 + r^2}{2}
+$$
+
+## Rather more general decompositions
+
+>- Group differences, statistical decomp (Oaxaca-Blinder 1973)
+>- Change in mean (Vaupel \& Canudas Romo 2002)
+>- Between-within decompositions, ANOVA
+>- SVD (underlies Lee Carter!)
+>- Compare two groups over time (Jdanov et al 2017)
+
+## Rather more general decompositions
+
+- Group differences, statistical decomp (Oaxaca-Blinder 1973)
+- Change in mean (Vaupel \& Canudas Romo 2002)
+- Between-within decompositions, ANOVA
+- SVD (underlies Lee Carter!)
+- \textcolor{red}{Compare two groups over time} (Jdanov et al 2017)
+
+## Contour decomposition
+
+```{r fig.height=3,echo=FALSE}
+library(png)
+library(grid)
+img <- readPNG("Jdanov2017.png")
+ grid.raster(img)
+```
+
+## Really quite general decompositions
+
+>- Difference-scaled derivatives, LTRE (Caswell 1989)
+>- Stepwise-replacement algorithm (Adreev et al 2002)
+>- Pseudo-continuous (Horiuchi et al 2008)
+>- Generalized counterfactual approach (Sudharsanan \& Bijlsma 2020)
+
+## Bibliography
+
+\tiny
+Andreev, E. M., Shkolnikov, V. M., & Begun, A. Z. (2002). Algorithm for decomposition of differences between aggregate demographic measures and its application to life expectancies, healthy life expectancies, parity-progression ratios and total fertility rates. Demographic Research, 7, 499-522.
+
+Arriaga, E. E. (1984). Measuring and explaining the change in life expectancies. Demography, 21(1), 83-96.
+
+Basellini, U., Canudas-Romo, V., & Lenart, A. (2016, April). Location-scale models in demography: a generalization of the parametric models of mortality. In 81th Annual Meeting of the Population Association of America Washington.
+
+Caswell, H. (1989). Analysis of life table response experiments I. Decomposition of effects on population growth rate. Ecological Modelling, 46(3-4), 221-237.
+
+Gupta, P. D. (1993). Standardization and decomposition of rates: a user's manual (No. 186). US Department of Commerce, Economics and Statistics Administration, Bureau of the Census. url [https://babel.hathitrust.org/cgi/pt?id=osu.32437011198450&view=1up&seq=3](https://babel.hathitrust.org/cgi/pt?id=osu.32437011198450&view=1up&seq=3) 
+
+Horiuchi, S., Wilmoth, J. R., & Pletcher, S. D. (2008). A decomposition method based on a model of continuous change. Demography, 45(4), 785-801.
+
+Kitagawa, E. M. (1955). Components of a difference between two rates. Journal of the american statistical association, 50(272), 1168-1194.
+
+Ebeling, M., Rau, R., & Baudisch, A. (2018). Rectangularization of the survival curve reconsidered: The maximum inner rectangle approach. Population studies, 72(3), 369-379.
+
+Jdanov, D. A., Shkolnikov, V. M., van Raalte, A. A., & Andreev, E. M. (2017). Decomposing current mortality differences into initial differences and differences in trends: the contour decomposition method. Demography, 54(4), 1579-1602.
+
+Li, T., & Anderson, J. J. (2013). Shaping human mortality patterns through intrinsic and extrinsic vitality processes. Demographic Research, 28, 341-372.
+
+Sudharsanan, N., Bijlsma, M. J. (2020) A generalized counterfactual approach to decomposing differences between populations. MPIDR Working Paper WP-2019-004 [https://dx.doi.org/10.4054/MPIDR-WP-2019-004](https://dx.doi.org/10.4054/MPIDR-WP-2019-004)
+
+Vaupel, J. W., & Romo, V. C. (2002). Decomposing demographic change into direct vs. compositional components. Demographic Research, 7, 1-14.

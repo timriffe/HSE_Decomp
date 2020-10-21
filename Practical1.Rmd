@@ -1,0 +1,254 @@
+---
+title: "General Decomposition Practice 1"
+author: "Tim Riffe"
+date: "21 Oct 2020"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Setup
+
+We will use some different packages. First let's install `DemoDecomp`
+
+```{r, message =FALSE, warning = FALSE, eval = FALSE}
+library(remotes)
+install_github("timriffe/DemoDecomp")
+```
+
+And some other packages we'll need for this or that
+
+```{r, message = FALSE, warning = FALSE}
+library(DemoDecomp)
+library(osfr)
+library(tidyverse)
+library(lubridate)
+```
+
+
+First let's test equivalency between Kitagawa and the general methods. We'll use the example of decomposing differences in crude case fatality ratios of COVID-19, then we'll extend the decomposition creatively (if we can).
+
+```{r, eval=FALSE}
+osf_retrieve_file("7tnfh") %>%
+  osf_download(conflicts = "overwrite") 
+COVerAGEDB5 <-  read_csv("Output_5.zip",
+                     skip = 3,
+                     col_types = "ccccciiddd")
+# convert to date class
+COV5 <- 
+  COVerAGEDB5 %>% 
+  filter(Country %in% c("Philippines","Germany"),
+         Region == "All",
+         Sex == "b") %>% 
+  select(-Tests) %>% 
+  mutate(Date = dmy(Date),
+         CFRx = Deaths / Cases)
+
+```
+
+```{r, include = FALSE}
+COVerAGEDB5 <-  read_csv("Output_5.zip",
+                     skip = 3,
+                     col_types = "ccccciiddd")
+# convert to date class
+COV5 <- 
+  COVerAGEDB5 %>% 
+  filter(Country %in% c("Philippines","Germany"),
+         Region == "All",
+         Sex == "b") %>% 
+  select(-Tests) %>% 
+  mutate(Date = dmy(Date),
+         CFRx = Deaths / Cases)
+```
+
+Let's examine cases and deaths by age in Germany. You can switch it to Philippines.
+
+```{r,warning=FALSE,message=FALSE}
+COV5 %>% 
+  mutate(Age20 = Age - Age %% 20) %>% 
+  filter(Country == "Germany",
+         Cases >= 20,
+         Deaths >= 5) %>% 
+  group_by(Date,Age20) %>% 
+  summarize(Cases = sum(Cases),
+            Deaths = sum(Deaths)) %>% 
+  ggplot(aes(x = Cases,
+             y = Deaths,
+             color = factor(Age20),
+             group = Age20)) +
+  geom_line() + 
+  scale_x_log10()+
+  scale_y_log10()
+```
+
+And what about time series of CFR?
+
+```{r, message =FALSE,warning=FALSE}
+CFR <-
+COV5 %>% 
+  filter(Date >= dmy("01.04.2020")) %>% 
+  group_by(Country,Date) %>% 
+  summarize(Deaths = sum(Deaths),
+            Cases = sum(Cases)) %>% 
+  ungroup() %>% 
+  mutate(CFR = Deaths / Cases) 
+CFR %>% 
+  ggplot(aes(x=Date,y=CFR,color=Country,group=Country)) + 
+  geom_line()
+```
+
+Let's decompose CFR at a particular date. Nevermind the question of aligning deaths and cases properly in calendar time. Ignore other measurement issues at play for this exercise. Let's take these data at face value as ask how much of the CFR difference on July 15 was due to the age-specific CFR itself and how much due to the age structure of cases and how much is due to age-structured rate differences.
+
+```{r}
+# These are the CFR values on July 15
+CFR %>% 
+  filter(Date == dmy("15.07.2020")) 
+
+# This is the difference we want to explain
+zeta <-
+  CFR %>% 
+  filter(
+    Date == dmy("15.07.2020")) %>% 
+  pull(CFR) %>% 
+  diff()
+zeta
+```
+
+### Make a CFR calculating function
+
+We need to design the function in a particular way. It should take all parameters as a single vector. There are different ways to get from this data to CFR. We're interested in the age distribution of cases:
+
+$$
+c_x = \frac{Cases_x}{\sum(Cases)}
+$$
+In this case CFR is the $c_x$-weighted average of $CFR_x$:
+$$
+CFR = \sum c_x \cdot CFR_x = \frac{\sum Deaths_x}{\sum Cases_x}
+$$
+
+We prefer to decompose using $c_x$ because it is a distribution summing to 1, and can therefore be used as a weight without further ado. Indeed, this setup allows for Kitagawa decomposing directly.
+
+Practically, we extract `c_x` and `CFRx`, and stack them in a single vector.
+```{r}
+DE <- COV5 %>% 
+  filter(Country == "Germany",
+         Date == dmy("15.07.2020")) %>% 
+  mutate(c = Cases / sum(Cases)) %>% 
+  select(CFRx, c) %>% 
+  as.matrix() %>% # convert to matrix
+  c()             # cheap vec operator 
+
+PH <- COV5 %>% 
+  filter(Country == "Philippines",
+         Date == dmy("15.07.2020")) %>% 
+  mutate(c = Cases / sum(Cases)) %>% 
+  select(CFRx, c) %>% 
+  as.matrix() %>% 
+  c()
+```
+
+Now we just need to write a function that knows what to do with this to calculate crude CFR. One way might look like this. Before calculating the result, it is convenient to reshape the parameters from a vector to somethig easier to work with. In practice this function might actually be a wrapper around some other code you've written (step 2).
+
+```{r}
+calc_CFR <- function(pars){
+  
+  # step 1: convert from vec into something we can use
+  N        <- length(pars)
+  dim(pars)<- c(N / 2, 2) # rows, columns
+  
+  # step 2: calculate the result
+  sum(pars[, 1] * pars[, 2]) 
+}
+```
+
+Now, for exposition and comparison, let's do a Kitagawa decomp. Usually we'd write a straightforward function like this:
+
+```{r}
+kitagawa <- function(r1,s1,r2,s2){
+  rd <- r2-r1
+  sd <- s2-s1
+  rm <- (r1 + r2) / 2
+  sm <- (s1 + s2) / 2
+  
+  reff <- rd * sm
+  seff <- sd * rm
+  list(r = reff, s = seff)
+}
+```
+
+Here parameters are separate by type. However, for compatibility with the general methods, we'll write a tiny wrapper that anticipates $\theta$ as a stacked vector, sorry if this confuses things a bit:
+
+```{r}
+kitagawa_vec <- function(pars1, pars2){
+  
+  # 1) turn back into something we can feed to kitagawa()
+  N <- length(pars1)
+  dim(pars1) <- c(N / 2, 2)
+  dim(pars2) <- c(N / 2, 2)
+  
+  # 2) calcualte result and return as vec organized in same way
+  kitagawa(r1 = pars1[, 1],
+           s1 = pars1[, 2],
+           r2 = pars2[, 1],
+           s2 = pars2[, 2]) %>% 
+    unlist()
+}
+```
+
+Now let's see what we get
+
+```{r}
+# perform the decomp
+dec_kit      <- kitagawa_vec(DE,PH)
+
+# organize results
+dim(dec_kit) <- c(21,2)
+
+# rate vs structure effects
+colSums(dec_kit)
+
+# Compare
+
+sum(dec_kit) # exact :-)
+             # but not unique :-()
+```
+
+Now let's do the same with the three general approaches, we use `calc_CFR()`
+
+```{r}
+
+dec_h <- horiuchi(calc_CFR, DE, PH, N = 20)
+dec_s <- stepwise_replacement(calc_CFR, DE, PH, symmetrical = TRUE)
+dec_c <- ltre(calc_CFR, DE, PH)
+
+zeta
+sum(dec_kit)
+sum(dec_h)
+sum(dec_s)
+sum(dec_c) # approximate
+```
+
+Visualize results?
+
+```{r}
+colnames(dec_kit) <- c("r","s")
+dec_kit %>% 
+  as.tibble() %>% 
+  mutate(Age = seq(0, 100, by = 5)) %>% 
+  pivot_longer(r:s,
+               names_to = "component",
+               values_to = "contribution") %>% 
+  ggplot(aes(x = Age,
+             y = contribution, 
+             fill = component, 
+             group = component)) + 
+  geom_bar(stat = "identity") + 
+  geom_hline(yintercept = 0)
+```
+
+They will all look the same visually in this case.
+
+
+

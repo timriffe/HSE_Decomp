@@ -1,0 +1,106 @@
+---
+title: Generalized decomposition methods
+author: | 
+  | Tim Riffe
+  | MPIDR
+  | Laboratory of Population Health
+date: "21 Oct 2020"
+output: beamer_presentation
+header-includes:
+- \usepackage{graphicx}
+- \usepackage{xcolor}
+- \usepackage{amssymb}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## General form
+
+$$\zeta = \mathbb{Z '} - \mathbb{Z} = f(\theta ') - f(\theta)$$
+\pause
+$$ \zeta = \sum \kappa_i$$
+
+## Practically for you
+
+>- Think of your input data as parameters, $\theta$
+>- Turn your calcs into a single function $f()$
+>- Make a version of $f()$ that accepts $\theta$ as a single vector
+>- Prepare the inputs in $\theta^1$ and $\theta^2$ vectors
+>- Ready to decompose! 
+
+## Three different strategies
+\Large
+Generalized methods interchangeable
+
+- stepwise replacement (Andreev)
+- difference-scaled derivatives (LTRE, Caswell)
+- continuous perturbation (Horiuchi)
+
+## Stepwise replacement
+
+>- turn $\theta^1$ into $\theta^2$ by sequentially swapping out elements, one at a time.
+>- calculate at each swap step $\mathbb{Z}^i$
+>- $\kappa_i = \mathbb{Z}^{i+1} - \mathbb{Z}^{i}$
+>- $\sum \kappa_i = \mathbb{Z}^2 - \mathbb{Z}^1$
+
+## Stepwise replacement
+
+>- Order of swapping important
+>- Straightforward when only age
+>- Swap bottom-up, top-down, take avg 
+>- Computationally most efficient 
+>- Unless you want to purge swap order bias
+
+## Difference-scaled derivatives
+
+>- Take $\bar{\theta} = \frac{\theta^1 + \theta^2}{2}$
+>- Calculate partial derivatives $\frac{\partial \mathbb{Z}}{\partial \bar{\theta}_i}$
+>- $\kappa_i = (\theta^2 - \theta^1) \frac{\partial \mathbb{Z}}{\partial \bar{\theta}_i}$
+>- Approximate: $\sum \kappa_i \approx \zeta$
+
+\pause
+I drew a picture!
+
+
+\pause
+- needs extra function for derivatives
+- better w *analytic* derivs
+
+## ``Continuous'' perturbation
+
+>- Interpolate between $\theta^1$ and $\theta^2$ in $J$ discrete steps
+>- At each step $j$, calculate:
+\pause
+$$\delta\mathbb{Z}_{i,j} = f(\theta_{i+,j}) - f(\theta_{i-,j})$$
+\pause
+where:
+$\theta_{i+,j}$ means that the $i^{th}$ element of $\theta_j$ is perturbed up by:
+$$\frac{\theta^2_{i} - \theta^1_{i}}{2J}$$
+and $i-$ subtracts by the same.
+
+\pause
+
+>- Tricks for non-linear path
+>- Tricks to ensure bounded parameters
+
+## Pros and cons?
+
+>- Exactness (do we care?)
+>- Symmetry
+>- Complexity limits?
+>- Programming overhead
+>- Computational efficiency
+>- All in `DemoDecomp`
+
+## Post decomposition
+
+>- Make sense of results
+>- Summarize results 
+>- Let's do this
+
+
+
+
+
