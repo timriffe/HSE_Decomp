@@ -25,6 +25,7 @@ library(DemoDecomp)
 library(osfr)
 library(tidyverse)
 library(lubridate)
+library(wpp2019)
 ```
 
 
@@ -250,5 +251,171 @@ dec_kit %>%
 
 They will all look the same visually in this case.
 
+# Increase the complexity
+
+Note CFR does NOT take into account population structure. It just looks at structure in terms of the age pattern of cases. Different transmission pathways could hypothetically give the same age structure of cases in two populations with very different age structures. Let's see if we can net out all three effects. For this, we'll need to merge in population structure from another source, and we'll need to reframe the CFR calc somewhat. Pardon this bit of wrangling in order to get the data mergeable.
+
+```{r, message=FALSE}
+library(wpp2019)
+data(popF)
+data(popM)
+fem <-
+  popF %>%
+  select(name, age, `2020`) %>% 
+  filter(name %in% c("Germany", "Philippines")) %>% 
+  mutate(Sex = "f")
+mal <-
+  popF %>%
+  select(name, age, `2020`) %>% 
+  filter(name %in% c("Germany", "Philippines")) %>% 
+  mutate(Sex = "m")
+
+Age <- rep(seq(0,100,by=5),2)
+pop <- fem %>% 
+  bind_rows(mal) %>% 
+  mutate(Country = as.character(name)) %>% 
+  group_by(Country, age) %>% 
+  summarize(Population = sum(`2020`)) %>% 
+  ungroup() %>% 
+  mutate(age = as.character(age),
+    Age = case_when(
+    age == "0-4" ~ 0,
+    age == "5-9" ~ 5,
+    age == "10-14" ~ 10,
+    age == "15-19" ~ 15,
+    age == "20-24" ~ 20,
+    age == "25-29" ~ 25,
+    age == "30-34" ~ 30,
+    age == "35-39" ~ 35,
+    age == "40-44" ~ 40,
+    age == "45-49" ~ 45,
+    age == "50-54" ~ 50,
+    age == "55-59" ~ 55,
+    age == "60-64" ~ 60,
+    age == "65-69" ~ 65,
+    age == "70-74" ~ 70,
+    age == "75-79" ~ 75,
+    age == "80-84" ~ 80,
+    age == "85-89" ~ 85,
+    age == "90-94" ~ 90,
+    age == "95-99" ~ 95,
+    age == "100+" ~ 100
+  ),
+         Population = Population * 1000,
+         Sex = "b") %>% 
+  select(-age)
+
+```
+
+Now this data is ready to merge with `COV5`
+
+```{r}
+COV <-
+  COV5 %>% 
+  filter(Country %in% c("Germany","Philippines"),
+         Date == dmy("15.07.2020")) %>% 
+  left_join(pop)
+```
+
+To net out population structure, let's say that cases are function of transmission probability (transmission * detection probability), ergo that cases are $Cases_x = c_x * P_x$, so we need to calculate $c_x$:
+
+```{r}
+COV <-
+  COV %>% 
+  mutate(cx = Cases / Population)
+```
+
+Now $Population$ is at base a weighting function, so we can reduce it to a distribution for clean (scale-free!) decomposing:
+
+```{r}
+COV <- 
+  COV %>% 
+  group_by(Country) %>% 
+  mutate(Px = Population/ sum(Population)) %>% 
+  ungroup()
+```
+
+Then we should be able to get back the same CFR we did before using $P_x$, $c_x$, and $CFR_x$, right?
+
+```{r}
+
+  COV %>% 
+  mutate(Cases_test = cx * Px,
+         Deaths_test = cx * Px * CFRx) %>% 
+  group_by(Country) %>% 
+  summarize(CFR = sum(Deaths_test) / sum(Cases_test)) %>% 
+  pull(CFR) %>% 
+  diff() # looks the same to me!!
+```
+
+So, let's make our $\theta$s and a new CFR function:
+
+```{r}
+calc_CFR3 <- function(Px,cx,CFRx){
+  sum(Px * cx * CFRx) /
+    sum(Px * cx)
+}
+
+
+calc_CFR3_vec <- function(pars){
+  # 1) reshape!
+  # assume in order Px,cx,CFRx
+  N <- length(pars)
+  dim(pars) <- c(N/3,3)
+  calc_CFR3(Px = pars[,1],
+            cx = pars[,2],
+            CFRx = pars[,3])
+}
+
+```
+
+Now Das Gupta could do this using a Kitagawa approach. There's even an R package for it, but I've not had time to test it and understand it well enough to present. It's here: [https://github.com/sadatnfs/dgdecomp](https://github.com/sadatnfs/dgdecomp)
+
+We will use the generalized methods.
+
+```{r}
+DE3 <- 
+  COV %>% 
+  filter(Country == "Germany") %>% 
+  select(Px,cx,CFRx) %>% 
+  as.matrix() %>% 
+  c()
+
+PH3 <- 
+  COV %>% 
+  filter(Country == "Philippines") %>% 
+  select(Px,cx,CFRx) %>% 
+  as.matrix() %>% 
+  c()
+```
+
+Now we're ready:
+
+```{r}
+dec3_h <- horiuchi(calc_CFR3_vec, DE3, PH3, N = 20)
+dec3_c <- ltre(calc_CFR3_vec, DE3, PH3)
+dec3_s <- stepwise_replacement(calc_CFR3_vec, DE3, PH3)
+
+N <- length(DE3)
+dim(dec3_h) <- c(N/3,3)
+dim(dec3_c) <- c(N/3,3)
+dim(dec3_s) <- c(N/3,3)
+
+colnames(dec3_h) <- c("Px","cx","CFRx")
+colnames(dec3_c) <- c("Px","cx","CFRx")
+colnames(dec3_s) <- c("Px","cx","CFRx")
+
+# compare components
+rbind(
+colSums(dec3_h),
+colSums(dec3_c),
+colSums(dec3_s)
+)
+
+# compare sums
+sum(dec3_h);sum(dec3_c);sum(dec3_s)
+```
+
+And from here out I'll accept challenges, suggestions, questions, etc.
 
 
