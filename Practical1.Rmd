@@ -47,6 +47,8 @@ COV5 <-
   mutate(Date = dmy(Date),
          CFRx = Deaths / Cases)
 
+rm(COVerAGEDB5)
+gc()
 ```
 
 ```{r, include = FALSE}
@@ -68,13 +70,13 @@ Let's examine cases and deaths by age in Germany. You can switch it to Philippin
 
 ```{r,warning=FALSE,message=FALSE}
 COV5 %>% 
+  filter(Country == "Philippines") %>% 
   mutate(Age20 = Age - Age %% 20) %>% 
-  filter(Country == "Germany",
-         Cases >= 20,
-         Deaths >= 5) %>% 
   group_by(Date,Age20) %>% 
   summarize(Cases = sum(Cases),
             Deaths = sum(Deaths)) %>% 
+  filter(Cases >= 20,
+         Deaths >= 5) %>% 
   ggplot(aes(x = Cases,
              y = Deaths,
              color = factor(Age20),
@@ -162,14 +164,15 @@ calc_CFR <- function(pars){
   # step 2: calculate the result
   sum(pars[, 1] * pars[, 2]) 
 }
+calc_CFR(DE) - calc_CFR(PH)
 ```
 
 Now, for exposition and comparison, let's do a Kitagawa decomp. Usually we'd write a straightforward function like this:
 
 ```{r}
 kitagawa <- function(r1,s1,r2,s2){
-  rd <- r2-r1
-  sd <- s2-s1
+  rd <- r2 - r1
+  sd <- s2 - s1
   rm <- (r1 + r2) / 2
   sm <- (s1 + s2) / 2
   
@@ -206,7 +209,7 @@ dec_kit      <- kitagawa_vec(DE,PH)
 
 # organize results
 dim(dec_kit) <- c(21,2)
-
+colnames(dec_kit) <- c("r","s")
 # rate vs structure effects
 colSums(dec_kit)
 
@@ -265,12 +268,11 @@ fem <-
   filter(name %in% c("Germany", "Philippines")) %>% 
   mutate(Sex = "f")
 mal <-
-  popF %>%
+  popM %>%
   select(name, age, `2020`) %>% 
   filter(name %in% c("Germany", "Philippines")) %>% 
   mutate(Sex = "m")
 
-Age <- rep(seq(0,100,by=5),2)
 pop <- fem %>% 
   bind_rows(mal) %>% 
   mutate(Country = as.character(name)) %>% 
@@ -303,7 +305,8 @@ pop <- fem %>%
   ),
          Population = Population * 1000,
          Sex = "b") %>% 
-  select(-age)
+  select(-age) %>% 
+  arrange(Country, Age)
 
 ```
 
@@ -346,25 +349,35 @@ Then we should be able to get back the same CFR we did before using $P_x$, $c_x$
   summarize(CFR = sum(Deaths_test) / sum(Cases_test)) %>% 
   pull(CFR) %>% 
   diff() # looks the same to me!!
+zeta
 ```
 
 So, let's make our $\theta$s and a new CFR function:
 
 ```{r}
+
+# This is how a normal human would set up the 
+# function arguments. This is fine. Do this!
+# Especially because your case will be more complex
 calc_CFR3 <- function(Px,cx,CFRx){
   sum(Px * cx * CFRx) /
     sum(Px * cx)
 }
 
-
+# but DemoDecomp needs parameters as a vector, for silly
+# practicality reasons. That might be relaxed, though
+# at least for parameters that can be expressed as arrays.
 calc_CFR3_vec <- function(pars){
+  
   # 1) reshape!
   # assume in order Px,cx,CFRx
   N <- length(pars)
   dim(pars) <- c(N/3,3)
-  calc_CFR3(Px = pars[,1],
-            cx = pars[,2],
-            CFRx = pars[,3])
+  
+  # 2) then calculate, using the normal-looking function
+  calc_CFR3(Px = pars[, 1],
+            cx = pars[, 2],
+            CFRx = pars[, 3])
 }
 
 ```
@@ -392,20 +405,22 @@ PH3 <-
 Now we're ready:
 
 ```{r}
-dec3_h <- horiuchi(calc_CFR3_vec, DE3, PH3, N = 20)
+dec3_h <- horiuchi(calc_CFR3_vec, DE3, PH3, N = 50)
 dec3_c <- ltre(calc_CFR3_vec, DE3, PH3)
 dec3_s <- stepwise_replacement(calc_CFR3_vec, DE3, PH3)
 
-N <- length(DE3)
+# assign dimensions (bookkeeping works out here)
+N           <- length(DE3)
 dim(dec3_h) <- c(N/3,3)
 dim(dec3_c) <- c(N/3,3)
 dim(dec3_s) <- c(N/3,3)
 
+# assign contribution names
 colnames(dec3_h) <- c("Px","cx","CFRx")
 colnames(dec3_c) <- c("Px","cx","CFRx")
 colnames(dec3_s) <- c("Px","cx","CFRx")
 
-# compare components
+# compare components from three approaches
 rbind(
 colSums(dec3_h),
 colSums(dec3_c),
