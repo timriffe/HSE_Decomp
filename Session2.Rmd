@@ -103,7 +103,7 @@ img <- readPNG("Jdanov2017.png")
 ## Really quite general decompositions
 
 >- Difference-scaled derivatives, LTRE (Caswell 1989)
->- Stepwise-replacement algorithm (Adreev et al 2002)
+>- Stepwise-replacement algorithm (Andreev et al 2002)
 >- Pseudo-continuous (Horiuchi et al 2008)
 >- Generalized counterfactual approach (Sudharsanan \& Bijlsma 2020)
 
